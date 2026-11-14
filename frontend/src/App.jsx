@@ -4,6 +4,7 @@ import About from "./pages/About.jsx";
 import SignIn from "./pages/SignIn.jsx";
 import SignUp from "./pages/SignUp.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
+import Calculator from "./pages/Calculator.jsx";
 import { loadSession, saveSession, clearSession } from "./auth.js";
 import { useRecognition, useVoiceCommand, voiceSupported } from "./useVoice.js";
 
@@ -53,9 +54,12 @@ export default function App() {
         <nav aria-label="Main menu">
           {navButton("home", "Home")}
           {navButton("about", "About us")}
+          {navButton("calculator", "Calculator")}
           {user ? (
             <>
               {navButton("dashboard", "Experiments")}
+              
+
               <button onClick={handleLogout}>Log out</button>
             </>
           ) : (
@@ -73,6 +77,8 @@ export default function App() {
         {page === "signin" && <SignIn onDone={handleAuth} onSwitch={() => setPage("signup")} />}
         {page === "signup" && <SignUp onDone={handleAuth} onSwitch={() => setPage("signin")} />}
         {page === "dashboard" && user && <Dashboard user={user} voice={voice} />}
+        {page === "calculator" && <Calculator />}
+
       </main>
 
       <footer><p>Equilab: a free virtual lab for classes 6 to 8.</p></footer>

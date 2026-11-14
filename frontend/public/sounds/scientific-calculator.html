@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VLAB Accessible Scientific Calculator & Equation Solver</title>
+<style>
+:root{--bg:#0b1220;--panel:#142137;--panel2:#1d304b;--text:#f4f7fb;--muted:#c7d2e0;--accent:#8be9fd;--green:#b8f28b;--border:#536780;--focus:#ffd166;--error:#ffaaaa}
+*{box-sizing:border-box}body{margin:0;padding:22px;background:var(--bg);color:var(--text);font:17px/1.55 system-ui,Arial,sans-serif}
+button,input,select{font:inherit}button,input,select{border:2px solid var(--border);border-radius:9px}
+button{min-height:46px;padding:9px 13px;background:var(--panel2);color:var(--text);cursor:pointer}
+button:hover{border-color:var(--accent)}button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:4px solid var(--focus);outline-offset:3px}
+button.primary,[aria-pressed=true]{background:#16465b;border-color:var(--accent)}
+button:disabled{opacity:.5;cursor:not-allowed}
+input,select{background:#07111f;color:var(--text);padding:10px;width:100%;min-height:46px}
+label{display:block;font-weight:650;margin-bottom:6px}.app{max-width:1120px;margin:auto}
+.skip{position:absolute;left:-9999px;top:8px;background:white;color:black;padding:12px;z-index:5}.skip:focus{left:8px}
+header{margin-bottom:18px}h1{font-size:clamp(1.7rem,4vw,2.5rem);margin:0 0 5px}h2{margin:0 0 14px;font-size:1.35rem}h3{margin:16px 0 8px}
+.muted{color:var(--muted)}.panel{background:var(--panel);border:1px solid var(--border);border-radius:15px;padding:20px;margin:15px 0}
+.toolbar,.settings,.tabs{display:flex;gap:10px;flex-wrap:wrap;align-items:end}
+.settings label{min-width:150px;flex:1}.tabs button[aria-selected=true]{background:#16465b;border-color:var(--accent)}
+.tab-panel[hidden]{display:none}.display{background:#07111f;border:2px solid var(--border);border-radius:11px;padding:15px;margin:14px 0;min-height:105px;overflow-wrap:anywhere}
+#expression{color:var(--muted);min-height:25px}#result{font-size:clamp(1.8rem,5vw,2.6rem);font-weight:750;color:var(--green)}
+.calc-layout{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(280px,1fr);gap:18px}
+.keypad{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}.keypad button{min-height:56px;font-size:1.15rem;font-weight:700}
+.function-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.function-grid button{min-height:49px}
+.result-box{background:#07111f;border:1px solid var(--border);border-radius:10px;padding:14px;margin-top:14px;min-height:64px;overflow-wrap:anywhere}
+.result-box strong{color:var(--green)}.field-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.field-grid.quad{grid-template-columns:repeat(3,minmax(0,1fr))}
+.field-grid label{min-width:0}.solver-actions{margin-top:14px}.status{min-height:26px;color:var(--muted)}
+.math-output{background:#07111f;border:1px solid var(--border);border-radius:10px;padding:15px;min-height:65px;overflow-x:auto;display:flex;align-items:center;justify-content:center}
+math{font-size:1.6rem}.sr-only{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+.high-contrast{--bg:#000;--panel:#000;--panel2:#000;--text:#fff;--muted:#fff;--accent:#ff0;--green:#0f6;--border:#fff;--focus:#ffae00}
+.large-text{font-size:21px}.high-contrast .panel,.high-contrast .display,.high-contrast .result-box,.high-contrast .math-output{border-color:#ff0}
+.high-contrast h1,.high-contrast h2,.high-contrast h3{color:#ff0}.high-contrast button{color:#ff0;border-color:#ff0}.high-contrast .display,.high-contrast .result-box,.high-contrast .math-output,.high-contrast input,.high-contrast select{background:#000;color:#fff}
+.error{color:var(--error)}.button-row{display:flex;flex-wrap:wrap;gap:9px;margin-top:12px}
+@media(max-width:760px){body{padding:12px}.calc-layout{grid-template-columns:1fr}.panel{padding:15px}.field-grid,.field-grid.quad{grid-template-columns:1fr 1fr}}
+@media(max-width:430px){.field-grid,.field-grid.quad{grid-template-columns:1fr}.function-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to calculator content</a>
+<div class="app">
+<header>
+<h1>VLAB Accessible Scientific Calculator</h1>
+<p class="muted">Scientific calculations, equation solving and accessible mathematical output for visually impaired learners.</p>
+</header>
+
+<section class="panel" aria-labelledby="accessHeading">
+<h2 id="accessHeading">Accessibility controls</h2>
+<div class="toolbar">
+<button id="contrastBtn" type="button" aria-pressed="false">High contrast: Off</button>
+<button id="largeBtn" type="button" aria-pressed="false">Large text: Off</button>
+<button id="voiceBtn" type="button" aria-pressed="true">Voice feedback: On</button>
+<button id="stopBtn" type="button">Stop speech</button>
+</div>
+</section>
+
+<nav class="panel tabs" role="tablist" aria-label="Calculator modules">
+<button type="button" role="tab" id="tabScientific" aria-controls="scientificPanel" aria-selected="true">Scientific Calculator</button>
+<button type="button" role="tab" id="tabQuadratic" aria-controls="quadraticPanel" aria-selected="false">Quadratic Solver</button>
+<button type="button" role="tab" id="tabCubic" aria-controls="cubicPanel" aria-selected="false">Cubic Solver</button>
+</nav>
+
+<main id="main">
+<section id="scientificPanel" class="panel tab-panel" role="tabpanel" aria-labelledby="tabScientific">
+<h2>Scientific calculator</h2>
+<div class="settings">
+<label for="angleMode">Angle mode
+<select id="angleMode"><option value="DEG">Degrees (DEG)</option><option value="RAD">Radians (RAD)</option></select></label>
+<label for="precision">Decimal precision
+<select id="precision"><option value="2">2 places</option><option value="4">4 places</option><option value="6" selected>6 places</option><option value="8">8 places</option><option value="10">10 places</option></select></label>
+</div>
+<div class="display" aria-label="Calculator display">
+<div id="expression" aria-label="Entered expression">Expression: 0</div>
+<div id="result" aria-label="Calculated result" aria-live="polite">0</div>
+</div>
+<div class="calc-layout">
+<section aria-labelledby="keypadHeading">
+<h3 id="keypadHeading">Number keypad</h3>
+<div class="keypad" id="keypad">
+<button data-value="7" aria-label="Seven">7</button><button data-value="8" aria-label="Eight">8</button><button data-value="9" aria-label="Nine">9</button><button data-value="/" aria-label="Divide">÷</button>
+<button data-value="4" aria-label="Four">4</button><button data-value="5" aria-label="Five">5</button><button data-value="6" aria-label="Six">6</button><button data-value="*" aria-label="Multiply">×</button>
+<button data-value="1" aria-label="One">1</button><button data-value="2" aria-label="Two">2</button><button data-value="3" aria-label="Three">3</button><button data-value="-" aria-label="Subtract">−</button>
+<button data-value="0" aria-label="Zero">0</button><button data-value="." aria-label="Decimal point">.</button><button data-value="(" aria-label="Open bracket">(</button><button data-value=")" aria-label="Close bracket">)</button>
+<button data-value="+" aria-label="Add">+</button><button data-value="pi" aria-label="Pi">π</button><button data-value="e" aria-label="Euler number">e</button><button data-value="^" aria-label="Power">xʸ</button>
+</div>
+<div class="button-row">
+<button id="clearBtn" class="danger" type="button">Clear</button><button id="backBtn" type="button">Backspace</button><button id="calculateBtn" class="primary" type="button">Calculate</button>
+</div>
+</section>
+<section aria-labelledby="functionsHeading">
+<h3 id="functionsHeading">Scientific functions</h3>
+<p class="muted">Type a number or expression, then select a function. The calculator evaluates the pending expression automatically.</p>
+<div class="function-grid" id="functions">
+<button data-fn="sin" aria-label="Sine">sin</button><button data-fn="cos" aria-label="Cosine">cos</button><button data-fn="tan" aria-label="Tangent">tan</button>
+<button data-fn="sec" aria-label="Secant">sec</button><button data-fn="csc" aria-label="Cosecant">cosec</button><button data-fn="cot" aria-label="Cotangent">cot</button>
+<button data-fn="asin" aria-label="Inverse sine">sin⁻¹</button><button data-fn="acos" aria-label="Inverse cosine">cos⁻¹</button><button data-fn="atan" aria-label="Inverse tangent">tan⁻¹</button>
+<button data-fn="asec" aria-label="Inverse secant">sec⁻¹</button><button data-fn="acsc" aria-label="Inverse cosecant">cosec⁻¹</button><button data-fn="acot" aria-label="Inverse cotangent">cot⁻¹</button>
+<button data-fn="sqrt" aria-label="Square root">√x</button><button data-fn="square" aria-label="Square">x²</button><button data-fn="log" aria-label="Common logarithm">log</button>
+<button data-fn="ln" aria-label="Natural logarithm">ln</button><button data-fn="abs" aria-label="Absolute value">|x|</button><button data-fn="reciprocal" aria-label="Reciprocal">1/x</button>
+</div>
+</section>
+</div>
+<div class="button-row">
+<label for="angleInput" style="min-width:190px;flex:1">Angle conversion input
+<input id="angleInput" type="number" step="any" value="180"></label>
+<button id="degToRad" type="button">Degree → Radian</button><button id="radToDeg" type="button">Radian → Degree</button>
+</div>
+<p id="conversion" class="status" aria-live="polite">Angle conversion result appears here.</p>
+<div class="result-box"><strong>Mathematical output (MathML)</strong><div class="math-output" id="mathOutput"><math xmlns="http://www.w3.org/1998/Math/MathML"><mn>0</mn></math></div></div>
+</section>
+
+<section id="quadraticPanel" class="panel tab-panel" role="tabpanel" aria-labelledby="tabQuadratic" hidden>
+<h2>Quadratic equation solver</h2>
+<p class="muted">Solve an equation in the form ax² + bx + c = 0.</p>
+<div class="field-grid quad">
+<label for="qa">Coefficient a<input id="qa" type="number" step="any" value="1"></label>
+<label for="qb">Coefficient b<input id="qb" type="number" step="any" value="-5"></label>
+<label for="qc">Coefficient c<input id="qc" type="number" step="any" value="6"></label>
+</div>
+<div class="button-row solver-actions"><button id="solveQuadratic" class="primary" type="button">Solve quadratic equation</button><button id="clearQuadratic" type="button">Clear values</button></div>
+<div id="quadraticResult" class="result-box" aria-live="polite" aria-atomic="true">Enter a, b and c, then select Solve.</div>
+</section>
+
+<section id="cubicPanel" class="panel tab-panel" role="tabpanel" aria-labelledby="tabCubic" hidden>
+<h2>Cubic equation solver</h2>
+<p class="muted">Solve an equation in the form ax³ + bx² + cx + d = 0. Supports one, two or three real roots; when there is one real root, the complex conjugate pair is also shown.</p>
+<div class="field-grid">
+<label for="ca">Coefficient a<input id="ca" type="number" step="any" value="1"></label>
+<label for="cb">Coefficient b<input id="cb" type="number" step="any" value="-6"></label>
+<label for="cc">Coefficient c<input id="cc" type="number" step="any" value="11"></label>
+<label for="cd">Coefficient d<input id="cd" type="number" step="any" value="-6"></label>
+</div>
+<div class="button-row solver-actions"><button id="solveCubic" class="primary" type="button">Solve cubic equation</button><button id="clearCubic" type="button">Clear values</button></div>
+<div id="cubicResult" class="result-box" aria-live="polite" aria-atomic="true">Enter a, b, c and d, then select Solve.</div>
+</section>
+</main>
+
+<section class="panel">
+<h2>Keyboard and accessibility help</h2>
+<ul>
+<li>Use Tab and Shift + Tab to move through controls. Press Enter or Space to activate buttons.</li>
+<li>When the page itself has focus, number keys and +, −, *, /, brackets, decimal point and ^ enter an expression.</li>
+<li>Press Enter to calculate, Backspace to delete the last character and Escape to clear the expression.</li>
+<li>Use the angle selector to choose DEG or RAD before trigonometric calculations.</li>
+<li>Voice feedback uses your browser's speech synthesis. A screen reader such as NVDA can also read labelled controls and live results.</li>
+</ul>
+</section>
+<p id="liveStatus" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+</div>
+
+<script>
+(() => {
+const $ = id => document.getElementById(id);
+let expression = "", result = 0, voiceEnabled = true;
+const exprEl = $("expression"), resultEl = $("result"), live = $("liveStatus");
+const angleMode = $("angleMode"), precision = $("precision");
+
+function say(message) {
+  live.textContent = "";
+  setTimeout(() => live.textContent = message, 20);
+  if (voiceEnabled && "speechSynthesis" in window) {
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(message);
+    u.rate = 0.95;
+    speechSynthesis.speak(u);
+  }
+}
+function fmt(n) {
+  if (!Number.isFinite(n)) throw Error("The result is not a finite real number.");
+  const v = Number(n.toFixed(Number(precision.value)));
+  return Object.is(v, -0) ? "0" : String(v);
+}
+function refresh() {
+  exprEl.textContent = "Expression: " + (expression || "0");
+  resultEl.textContent = fmt(result);
+}
+function escapeXML(s) {
+  return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&apos;"}[c]));
+}
+function mathOutput(lhs, rhs) {
+  $("mathOutput").innerHTML = '<math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mrow><mtext>' +
+    escapeXML(lhs) + '</mtext><mo>=</mo><mn>' + escapeXML(rhs) + '</mn></mrow></math>';
+}
+function tokenize(s) {
+  const out=[]; let i=0;
+  while(i<s.length) {
+    const r=s.slice(i), m=r.match(/^(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?/i);
+    if(m){out.push({t:"n",v:Number(m[0])});i+=m[0].length;}
+    else if(r.startsWith("pi")){out.push({t:"n",v:Math.PI});i+=2;}
+    else if(r[0]==="e"){out.push({t:"n",v:Math.E});i++;}
+    else if("+-*/^()".includes(r[0])){out.push({t:r[0]==="("||r[0]===")"?r[0]:"o",v:r[0]});i++;}
+    else if(/\s/.test(r[0]))i++;
+    else throw Error("Unsupported character: "+r[0]);
+  }
+  return out;
+}
+function evaluate(s) {
+  const ts=tokenize(s);let p=0,peek=()=>ts[p],take=()=>ts[p++];
+  function atom(){
+    const t=take();if(!t)throw Error("Expression is incomplete.");
+    if(t.t==="n")return t.v;
+    if(t.t==="("){const v=add();if(!peek()||take().t!==")")throw Error("Missing closing bracket.");return v;}
+    if(t.t==="o"&&(t.v==="+"||t.v==="-")){const v=atom();return t.v==="-"?-v:v;}
+    throw Error("Expected a number.");
+  }
+  function power(){let v=atom();if(peek()&&peek().t==="o"&&peek().v==="^"){take();v=Math.pow(v,unary());}return v;}
+  function unary(){return power();}
+  function mul(){let v=unary();while(peek()&&peek().t==="o"&&["*","/"].includes(peek().v)){const op=take().v,r=unary();v=op==="*"?v*r:v/r;}return v;}
+  function add(){let v=mul();while(peek()&&peek().t==="o"&&["+","-"].includes(peek().v)){const op=take().v,r=mul();v=op==="+"?v+r:v-r;}return v;}
+  if(!ts.length)throw Error("Enter a number or expression first.");
+  const v=add();if(p!==ts.length)throw Error("Check the expression and brackets.");
+  if(!Number.isFinite(v))throw Error("Invalid result or division by zero.");
+  return v;
+}
+const toRad=x=>angleMode.value==="DEG"?x*Math.PI/180:x;
+const fromRad=x=>angleMode.value==="DEG"?x*180/Math.PI:x;
+const zero=x=>Math.abs(x)<1e-12;
+function apply(fn,x){
+ const r=toRad(x),s=Math.sin(r),c=Math.cos(r);
+ switch(fn){
+ case "sin":return s;case "cos":return c;
+ case "tan":if(zero(c))throw Error("Tangent is undefined at this angle.");return s/c;
+ case "sec":if(zero(c))throw Error("Secant is undefined at this angle.");return 1/c;
+ case "csc":if(zero(s))throw Error("Cosecant is undefined at this angle.");return 1/s;
+ case "cot":if(zero(s))throw Error("Cotangent is undefined at this angle.");return c/s;
+ case "asin":if(Math.abs(x)>1)throw Error("Inverse sine accepts values from minus one to one.");return fromRad(Math.asin(x));
+ case "acos":if(Math.abs(x)>1)throw Error("Inverse cosine accepts values from minus one to one.");return fromRad(Math.acos(x));
+ case "atan":return fromRad(Math.atan(x));
+ case "asec":if(Math.abs(x)<1)throw Error("Inverse secant requires absolute value at least one.");return fromRad(Math.acos(1/x));
+ case "acsc":if(Math.abs(x)<1)throw Error("Inverse cosecant requires absolute value at least one.");return fromRad(Math.asin(1/x));
+ case "acot":return fromRad(Math.atan2(1,x));
+ case "sqrt":if(x<0)throw Error("Square root is not real for a negative input.");return Math.sqrt(x);
+ case "square":return x*x;
+ case "log":if(x<=0)throw Error("Logarithm requires a positive input.");return Math.log10(x);
+ case "ln":if(x<=0)throw Error("Natural logarithm requires a positive input.");return Math.log(x);
+ case "abs":return Math.abs(x);
+ case "reciprocal":if(zero(x))throw Error("Reciprocal of zero is undefined.");return 1/x;
+ default:throw Error("Unknown function.");
+ }
+}
+const labels={sin:"sine",cos:"cosine",tan:"tangent",sec:"secant",csc:"cosecant",cot:"cotangent",asin:"inverse sine",acos:"inverse cosine",atan:"inverse tangent",asec:"inverse secant",acsc:"inverse cosecant",acot:"inverse cotangent",sqrt:"square root",square:"square",log:"base ten logarithm",ln:"natural logarithm",abs:"absolute value",reciprocal:"reciprocal"};
+function calculate(){
+ try{result=evaluate(expression);refresh();mathOutput(expression||"0",fmt(result));say("Result is "+fmt(result)+".");}
+ catch(e){resultEl.textContent="Error: "+e.message;resultEl.classList.add("error");say(e.message);}
+}
+function runFunction(fn){
+ try{
+  // If the user has typed a new expression, evaluate it now instead of using an old result.
+  const inputValue=expression.trim()!==""?evaluate(expression):result;
+  const answer=apply(fn,inputValue),shown=fmt(answer);
+  result=answer;expression=shown;resultEl.classList.remove("error");refresh();
+  const label=labels[fn],trig=["sin","cos","tan","sec","csc","cot","asin","acos","atan","asec","acsc","acot"].includes(fn);
+  mathOutput(label+"("+fmt(inputValue)+(trig?" "+angleMode.value:"")+")",shown);
+  say(label+" of "+fmt(inputValue)+(trig?" in "+angleMode.value.toLowerCase():"")+" equals "+shown+".");
+ }catch(e){resultEl.textContent="Error: "+e.message;resultEl.classList.add("error");say(e.message);}
+}
+$("keypad").addEventListener("click",e=>{const b=e.target.closest("[data-value]");if(!b)return;expression+=b.dataset.value;resultEl.classList.remove("error");refresh();});
+$("functions").addEventListener("click",e=>{const b=e.target.closest("[data-fn]");if(b)runFunction(b.dataset.fn);});
+$("calculateBtn").addEventListener("click",calculate);
+$("clearBtn").addEventListener("click",()=>{expression="";result=0;resultEl.classList.remove("error");refresh();mathOutput("0","0");say("Calculator cleared.");});
+$("backBtn").addEventListener("click",()=>{expression=expression.slice(0,-1);refresh();say("Last character deleted.");});
+angleMode.addEventListener("change",()=>say("Angle mode changed to "+angleMode.value+"."));
+precision.addEventListener("change",()=>{refresh();say("Precision set to "+precision.value+" decimal places.");});
+$("degToRad").addEventListener("click",()=>{const d=Number($("angleInput").value);if(!Number.isFinite(d))return say("Enter a valid degree value.");const r=d*Math.PI/180,ans=fmt(r);$("conversion").textContent=d+" degrees = "+ans+" radians.";mathOutput(d+" degrees",ans+" radians");say(d+" degrees equals "+ans+" radians.");});
+$("radToDeg").addEventListener("click",()=>{const r=Number($("angleInput").value);if(!Number.isFinite(r))return say("Enter a valid radian value.");const d=r*180/Math.PI,ans=fmt(d);$("conversion").textContent=r+" radians = "+ans+" degrees.";mathOutput(r+" radians",ans+" degrees");say(r+" radians equals "+ans+" degrees.");});
+
+// Quadratic equation: ax^2 + bx + c = 0, including complex roots.
+$("solveQuadratic").addEventListener("click",()=>{
+ const a=Number($("qa").value),b=Number($("qb").value),c=Number($("qc").value),out=$("quadraticResult");
+ try{
+  if(![$("qa").value,$("qb").value,$("qc").value].every(v=>v.trim()!=="")||![a,b,c].every(Number.isFinite))throw Error("Enter all three valid coefficients.");
+  if(zero(a))throw Error("Coefficient a cannot be zero for a quadratic equation.");
+  const D=b*b-4*a*c,den=2*a;
+  let text;
+  if(D>1e-12){const x1=(-b+Math.sqrt(D))/den,x2=(-b-Math.sqrt(D))/den;text="Discriminant is "+fmt(D)+". Two distinct real roots: x1 = "+fmt(x1)+" and x2 = "+fmt(x2)+".";}
+  else if(Math.abs(D)<=1e-12){const x=-b/den;text="Discriminant is zero. Two equal real roots: x1 = x2 = "+fmt(x)+".";}
+  else{const real=-b/den,imag=Math.sqrt(-D)/Math.abs(den);text="Discriminant is "+fmt(D)+". No real roots. Complex roots: x1 = "+fmt(real)+" + "+fmt(imag)+"i, x2 = "+fmt(real)+" - "+fmt(imag)+"i.";}
+  out.textContent=text;say(text);
+ }catch(e){out.textContent="Error: "+e.message;say(e.message);}
+});
+$("clearQuadratic").addEventListener("click",()=>{["qa","qb","qc"].forEach(id=>$(id).value="");$("quadraticResult").textContent="Enter coefficients a, b and c.";say("Quadratic coefficients cleared.");});
+
+// Cubic equation: ax^3 + bx^2 + cx + d = 0 using Cardano's method.
+$("solveCubic").addEventListener("click",()=>{
+ const ids=["ca","cb","cc","cd"],vals=ids.map(id=>$(id).value),[a,b,c,d]=vals.map(Number),out=$("cubicResult");
+ try{
+  if(vals.some(v=>v.trim()==="")||![a,b,c,d].every(Number.isFinite))throw Error("Enter all four valid coefficients.");
+  if(zero(a))throw Error("Coefficient a cannot be zero for a cubic equation.");
+  const A=b/a,B=c/a,C=d/a;
+  const p=B-A*A/3,q=2*A*A*A/27-A*B/3+C;
+  const disc=q*q/4+p*p*p/27,shift=A/3,eps=1e-12;
+  let roots=[];
+  if(disc>eps){
+    const u=Math.cbrt(-q/2+Math.sqrt(disc)),v=Math.cbrt(-q/2-Math.sqrt(disc));
+    const real=u+v-shift, pairReal=-(u+v)/2-shift, pairImag=Math.sqrt(3)*(u-v)/2;
+    roots.push("One real root: x1 = "+fmt(real)+".");
+    roots.push("Complex conjugate roots: x2 = "+fmt(pairReal)+" + "+fmt(pairImag)+"i; x3 = "+fmt(pairReal)+" - "+fmt(pairImag)+"i.");
+  }else if(Math.abs(disc)<=eps){
+    const u=Math.cbrt(-q/2),x1=2*u-shift,x2=-u-shift;
+    if(Math.abs(x1-x2)<1e-8)roots.push("Three equal real roots: x1 = x2 = x3 = "+fmt(x1)+".");
+    else roots.push("Three real roots, with a repeated root: x1 = "+fmt(x1)+", x2 = x3 = "+fmt(x2)+".");
+  }else{
+    const radius=2*Math.sqrt(-p/3),arg=(3*q/(2*p))*Math.sqrt(-3/p),theta=Math.acos(Math.max(-1,Math.min(1,arg)))/3;
+    const xs=[radius*Math.cos(theta)-shift,radius*Math.cos(theta-2*Math.PI/3)-shift,radius*Math.cos(theta-4*Math.PI/3)-shift].sort((x,y)=>x-y);
+    roots.push("Three distinct real roots: x1 = "+fmt(xs[0])+", x2 = "+fmt(xs[1])+", x3 = "+fmt(xs[2])+".");
+  }
+  const text=roots.join(" ");out.textContent=text;say(text);
+ }catch(e){out.textContent="Error: "+e.message;say(e.message);}
+});
+$("clearCubic").addEventListener("click",()=>{["ca","cb","cc","cd"].forEach(id=>$(id).value="");$("cubicResult").textContent="Enter coefficients a, b, c and d.";say("Cubic coefficients cleared.");});
+
+// Accessible tab navigation
+const tabInfo=[["tabScientific","scientificPanel"],["tabQuadratic","quadraticPanel"],["tabCubic","cubicPanel"]];
+function selectTab(id){
+ tabInfo.forEach(([tid,pid])=>{const active=tid===id;$(tid).setAttribute("aria-selected",String(active));$(tid).tabIndex=active?0:-1;$(pid).hidden=!active;});
+ $(id).focus();say($(id).textContent+" opened.");
+}
+tabInfo.forEach(([tid])=>$(tid).addEventListener("click",()=>selectTab(tid)));
+$("contrastBtn").addEventListener("click",()=>{const on=document.body.classList.toggle("high-contrast");$("contrastBtn").setAttribute("aria-pressed",String(on));$("contrastBtn").textContent="High contrast: "+(on?"On":"Off");say("High contrast "+(on?"enabled":"disabled"));});
+$("largeBtn").addEventListener("click",()=>{const on=document.body.classList.toggle("large-text");$("largeBtn").setAttribute("aria-pressed",String(on));$("largeBtn").textContent="Large text: "+(on?"On":"Off");say("Large text "+(on?"enabled":"disabled"));});
+$("voiceBtn").addEventListener("click",()=>{voiceEnabled=!voiceEnabled;$("voiceBtn").setAttribute("aria-pressed",String(voiceEnabled));$("voiceBtn").textContent="Voice feedback: "+(voiceEnabled?"On":"Off");if(!voiceEnabled&&"speechSynthesis"in window)speechSynthesis.cancel();else say("Voice feedback enabled.");});
+$("stopBtn").addEventListener("click",()=>{if("speechSynthesis"in window)speechSynthesis.cancel();live.textContent="Speech stopped.";});
+document.addEventListener("keydown",e=>{
+ if(e.altKey||e.ctrlKey||e.metaKey)return;
+ const tag=document.activeElement?.tagName;
+ if(["INPUT","SELECT","TEXTAREA","BUTTON"].includes(tag))return;
+ if(/^[0-9.+\-*/()^]$/.test(e.key)){e.preventDefault();expression+=e.key;refresh();}
+ else if(e.key==="Enter"||e.key==="="){e.preventDefault();calculate();}
+ else if(e.key==="Backspace"){e.preventDefault();expression=expression.slice(0,-1);refresh();}
+ else if(e.key==="Escape"){expression="";result=0;refresh();say("Expression cleared.");}
+});
+refresh();
+})();
+</script>
+</body>
+</html>
