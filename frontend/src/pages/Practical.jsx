@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import Simulation from "./Simulation.jsx";
 
-const API_URL = "http://localhost:5000/api/experiments";
+const BACKEND_URI = import.meta.env.VITE_BACKEND_URI;
+
+const API_URL = `${BACKEND_URI}/experiments`;
 
 const tabs = ["Practical File", "Simulation", "Generate Result"];
 
