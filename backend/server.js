@@ -2,9 +2,10 @@ import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
 import dotenv from "dotenv";
-import authRoutes from "./routes/auth.js";
 import connectDB from "./config/db.js";
 import experimentRouter from "./routes/experimentRoutes.js";
+import authRouter from "./routes/auth.js";
+import cookieparser from "cookie-parser";
 
 dotenv.config();
 
@@ -19,9 +20,10 @@ app.use(
   }),
 );
 app.use(express.json());
+app.use(cookieparser());
 
 // Routes
-app.use("/api/auth", authRoutes);
+app.use("/api/auth", authRouter);
 app.use("/api/experiments", experimentRouter);
 
 // Health check route
