@@ -6,6 +6,7 @@ import connectDB from "./config/db.js";
 import experimentRouter from "./routes/experimentRoutes.js";
 import authRouter from "./routes/auth.js";
 import cookieparser from "cookie-parser";
+import graphRouter from "./routes/graph.js";
 
 dotenv.config();
 
@@ -25,6 +26,7 @@ app.use(cookieparser());
 // Routes
 app.use("/api/auth", authRouter);
 app.use("/api/experiments", experimentRouter);
+app.use("/api/graphs", graphRouter);
 
 // Health check route
 app.get("/", (req, res) => {

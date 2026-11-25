@@ -7,6 +7,7 @@ import Dashboard from "./pages/Dashboard.jsx";
 import Calculator from "./pages/Calculator.jsx";
 import { loadSession, clearSession } from "./auth.js";
 import { useRecognition, useVoiceCommand, voiceSupported } from "./useVoice.js";
+import GraphFeature from "./features/App.jsx";
 
 function loadSettings() {
   try {
@@ -123,55 +124,62 @@ export default function App() {
         Skip to main content
       </a>
 
-      <header>
-        <h1>Equilab</h1>
+      <header className={user ? "logged-in-header" : "logged-out-header"}>
+  <h1>Equilab</h1>
 
-        <div
-          className="tools"
-          role="group"
-          aria-label="Display and voice settings"
-        >
-          <button aria-pressed={!!big} onClick={() => update({ big: !big })}>
-            Text size
-          </button>
-          <button
-            aria-pressed={!!light}
-            onClick={() => update({ light: !light })}
-          >
-            Contrast
-          </button>
-          <button
-            aria-pressed={voiceOn}
-            onClick={() => setVoiceOn(!voiceOn)}
-            disabled={!voiceSupported()}
-            title={voiceSupported() ? "" : "Voice control needs Google Chrome"}
-          >
-            Voice control
-          </button>
-        </div>
+  <nav aria-label="Main menu">
+    {navButton("home", "Home")}
 
-        <nav aria-label="Main menu">
-          {navButton("home", "Home")}
-          {navButton("about", "About us")}
-          {navButton("calculator", "Calculator")}
+    {!user && navButton("about", "About us")}
 
-          {user ? (
-            <>
-              {navButton("dashboard", "Experiments")}
-              <button onClick={handleLogout}>Log out</button>
-            </>
-          ) : (
-            <>
-              {navButton("signin", "Sign in")}
-              {navButton("signup", "Sign up")}
-            </>
-          )}
-        </nav>
-      </header>
+    {navButton("calculator", "Calculator")}
+
+    {user && navButton("dashboard", "Experiments")}
+
+    {user && navButton("graph", "Graph")}
+
+    {user ? (
+      <button onClick={handleLogout}>Log out</button>
+    ) : (
+      <>
+        {navButton("signin", "Sign in")}
+        {navButton("signup", "Sign up")}
+      </>
+    )}
+
+    {/* Display and voice settings */}
+    <div
+      className="tools"
+      role="group"
+      aria-label="Display and voice settings"
+    >
+      <button aria-pressed={!!big} onClick={() => update({ big: !big })}>
+        Text size
+      </button>
+
+      <button
+        aria-pressed={!!light}
+        onClick={() => update({ light: !light })}
+      >
+        Contrast
+      </button>
+
+      <button
+        aria-pressed={voiceOn}
+        onClick={() => setVoiceOn(!voiceOn)}
+        disabled={!voiceSupported()}
+        title={voiceSupported() ? "" : "Voice control needs Google Chrome"}
+      >
+        Voice control
+      </button>
+    </div>
+  </nav>
+</header>
 
       <main id="main" tabIndex="-1">
         {page === "home" && <Landing user={user} go={setPage} />}
         {page === "about" && <About />}
+        {page === "graph" && user && <GraphFeature />}
 
         {!sessionLoading && (
           <>

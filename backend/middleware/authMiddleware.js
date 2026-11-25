@@ -4,19 +4,21 @@ const authMiddleware = (req, res, next) => {
   const token = req.headers.authorization?.split(" ")[1];
 
   if (!token) {
-    console.log("Token missing");
-    return res.status(401).json({ message: "No token provided." });
+    return res.status(401).json({
+      message: "Please sign in first.",
+    });
   }
 
   try {
     const decoded = JWT.verify(token, process.env.JWT_ACCESS_KEY);
-    console.log("✅ Decoded token:", decoded);
-    req.user = decoded; // payload
+
+    req.user = decoded;
     next();
   } catch (error) {
-    console.error("Token verification failed:", error);
-    return res.status(401).json({ message: "Invalid token." });
+    return res.status(401).json({
+      message: "Invalid or expired token.",
+    });
   }
 };
 
-module.exports = authMiddleware;
+export default authMiddleware;
